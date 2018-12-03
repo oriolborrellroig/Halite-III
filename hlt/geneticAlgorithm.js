@@ -30,6 +30,17 @@ class GeneticAlgorithm {
         this.initializePopulation();
         this.calculateFitness(initialPosition);
         this.sortFeasibleByFitness();
+        while (feasibleMoves.lenght <= 0) {
+            generation = 0;
+            while (feasibleNotFull && generation <= GENERATION_SIZE) {
+                this.evolvePopulation();
+                this.calculateFitness(initialPosition);
+                this.sortFeasibleByFitness();
+                feasibleNotFull = addToFeasibleCodes();
+                ++generation;
+            }
+        }
+
 
         return Direction.North;
     }
@@ -79,6 +90,52 @@ class GeneticAlgorithm {
         });
         
     }
+
+    evolvePopulation() {
+        var newPopulationArray = [];
+
+        //Crossovers
+        for (var i = 0; i < POPULATION_SIZE; i += 2) {
+            if (Math.floor(2 * Math.random()) == 0) {
+                //TODO: Uninplemented Method
+                this.crossover1Point();
+            } else {
+                //TODO: Uninplemented Method
+                this.crossover2Points();
+            }
+        }
+
+        //Mutation, Permutation and Inversion
+        for (var i = 0; i < POPULATION_SIZE; i++) {
+            if (Math.floor(100 * Math.random()) < 3) {
+                //TODO: Uninplemented Method
+                this.mutation();
+            } else if (Math.floor(100 * Math.random()) < 3) {
+                //TODO: Uninplemented Method
+                this.permutation();
+            } else if (Math.floor(100 * Math.random()) < 2) {
+                //TODO: Uninplemented Method
+                this.inversion();
+            }
+        }
+
+        //TODO: Uninplemented Method
+        this.repetitionsToRandom();
+
+        this.populationArray = newPopulationArray;
+    }
+
+
+
+//    getParentPos() {
+//         parentPos += Math.floor(7 * Math.random());
+//         if (parentPos < POPULATION_SIZE / 5) {
+//             return parentPos;
+//         } else {
+//             parentPos = 0;
+//         }
+//         return parentPos;
+//     }
 }
 
 module.exports = {
