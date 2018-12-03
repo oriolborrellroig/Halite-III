@@ -2,6 +2,8 @@ const { Direction, Position } = require('./positionals');
 
 const commands = require('./commands');
 const constants = require('./constants');
+const logging = require('./logging');
+
 
 /** Base entity class for Ships, Dropoffs, and Shipyards. */
 class Entity {
@@ -14,6 +16,7 @@ class Entity {
     toString() {
         return `${this.constructor.name}(id=${this.id}, ${this.position})`;
     }
+
 }
 
 /** Represents a dropoff. */
@@ -42,7 +45,7 @@ class Shipyard extends Entity {
 }
 
 /** Represents a ship. */
-class Ship extends Entity {
+ class Ship extends Entity {
     constructor(owner, id, position, haliteAmount) {
         super(owner, id, position);
         this.haliteAmount = haliteAmount;
@@ -95,6 +98,59 @@ class Ship extends Entity {
 
     toString() {
         return `${this.constructor.name}(id=${this.id}, ${this.position}, cargo=${this.haliteAmount} halite)`;
+    }
+
+    r_getBestDirection(actualPosition, gameMap, range) {
+
+        if (range < 0 ) { //Base Case
+            gameMap.get(actualPosition).markVisited(true);
+            return gameMap.get(actualPosition).haliteAmount;
+        }
+        else {
+            var haliteNorth = haliteSouth = haliteEast = haliteWest = gameMap.get(actualPosition).haliteAmount;
+
+            if (!gameMap.get(actualPosition.directionalOffset(Direction.North)).getVisited()) {
+                gameMap.get(actualPosition.directionalOffset(Direction.North)).markVisited(true);
+                haliteNorth += this.r_getBestDirection(actualPosition.directionalOffset(Direction.North), gameMap, --range);
+            }
+            if (!gameMap.get(actualPosition.directionalOffset(Direction.South)).getVisited()) {
+                gameMap.get(actualPosition.directionalOffset(Direction.South)).markVisited(true);
+                haliteSouth += this.r_getBestDirection(actualPosition.directionalOffset(Direction.South), gameMap, --range);
+            }
+            if (!gameMap.get(actualPosition.directionalOffset(Direction.East)).getVisited()) {
+                gameMap.get(actualPosition.directionalOffset(Direction.East)).markVisited(true);
+                haliteEast += this.r_getBestDirection(actualPosition.directionalOffset(Direction.East), gameMap, --range);
+            }
+            if (!gameMap.get(actualPosition.directionalOffset(Direction.West)).getVisited()) {
+                gameMap.get(actualPosition.directionalOffset(Direction.West)).markVisited(true);
+                haliteWest += this.r_getBestDirection(actualPosition.directionalOffset(Direction.West), gameMap, --range);
+            }
+           
+            return Math.max(haliteNorth, haliteSouth, haliteEast, haliteWest);
+        }
+    }
+
+     /**
+     * Get the better action for a ship individualy.
+     * @param actualPosition is the actual position of the ship
+     * @param gameMap is the map of the game
+     * @param range is the maximum number of turns that we want to analize
+     * @returns the direction (North, South, East, West)
+     */
+    getBestDirection(actualPosition, gameMap, range) {
+
+        // let possibleDirections = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Still]; 
+        var haliteNorth = this.r_getBestDirection(actualPosition.directionalOffset(Direction.North), gameMap, --range);
+        var haliteSouth = this.r_getBestDirection(actualPosition.directionalOffset(Direction.South), gameMap, --range);
+        var haliteEast = this.r_getBestDirection(actualPosition.directionalOffset(Direction.East), gameMap, --range);
+        var haliteWest = this.r_getBestDirection(actualPosition.directionalOffset(Direction.West), gameMap, --range);
+        var halieStill = gameMap.get(actualPosition).haliteAmount;
+
+        if (haliteNorth > haliteSouth && haliteNorth > haliteEast && haliteNorth > haliteWest && haliteNorth > halieStill) return Direction.North;
+        else if (haliteSouth > haliteNorth && haliteSouth > haliteEast && haliteSouth > haliteWest && haliteSouth > halieStill) return Direction.South;
+        else if (haliteEast > haliteNorth && haliteEast > haliteSouth && haliteEast > haliteWest && haliteEast > halieStill) return Direction.East;
+        else if (haliteWest > haliteNorth && haliteWest > haliteSouth && haliteWest > haliteEast && haliteWest > halieStill) return Direction.West;
+        else if (halieStill > haliteNorth && halieStill > haliteSouth && halieStill > haliteEast && halieStill > haliteWest) return Direction.Still;
     }
 }
 

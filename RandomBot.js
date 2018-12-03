@@ -7,11 +7,9 @@ game.initialize().then(async () => {
     // At this point "game" variable is populated with initial map data.
     // This is a good place to do computationally expensive start-up pre-processing.
     // As soon as you call "ready" function below, the 2 second per turn timer will start.
-    await game.ready('MyBot');
+    await game.ready('RandomBot');
 
     logging.info(`My Player ID is ${game.myId}.`);
-
-    var oneShip = false;
 
     while (true) {
         await game.updateFrame();
@@ -27,22 +25,18 @@ game.initialize().then(async () => {
                 commandQueue.push(ship.move(safeMove));
             }
             else if (gameMap.get(ship.position).haliteAmount < hlt.constants.MAX_HALITE / 10) {
-                // const direction = ship.getBestDirection(ship.position, gameMap, 7);
+                const direction = Direction.getAllCardinals()[Math.floor(4 * Math.random())];
                 const destination = ship.position.directionalOffset(direction);
                 const safeMove = gameMap.naiveNavigate(ship, destination);
                 commandQueue.push(ship.move(safeMove));
             }
         }
-        
-        if (!oneShip) {
+
+        if (game.turnNumber < 0.75 * hlt.constants.MAX_TURNS &&
+            me.haliteAmount >= hlt.constants.SHIP_COST &&
+            !gameMap.get(me.shipyard).isOccupied) {
             commandQueue.push(me.shipyard.spawn());
-            oneShip = true;
         }
-        // if (game.turnNumber < 0.75 * hlt.constants.MAX_TURNS &&
-        //     me.haliteAmount >= hlt.constants.SHIP_COST &&
-        //     !gameMap.get(me.shipyard).isOccupied) {
-        //     commandQueue.push(me.shipyard.spawn());
-        // }
 
         await game.endTurn(commandQueue);
     }
