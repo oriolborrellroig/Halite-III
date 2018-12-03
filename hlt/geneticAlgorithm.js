@@ -3,7 +3,7 @@ const logging = require('./logging');
 
 class GeneticAlgorithm {
     constructor() {
-        this.TURNS_FOR_POPULATION = 4;
+        this.TURNS_FOR_POPULATION = 1;
         //Size of the population that will be generated.
         this.POPULATION_SIZE = 10;
         //Number of generations. If we don't have any feasible code generations, a new guess with new generations and populations will be made.
@@ -15,9 +15,7 @@ class GeneticAlgorithm {
         //Array with the feasible moves
         this.feasibleMoves = [];
         //Array with the population
-        this.population = [];
-        //Array with the fitness
-        this.fitness = [];
+        this.populationArray = [];
         //The map of the game;
         this.gameMap;
     }
@@ -31,29 +29,28 @@ class GeneticAlgorithm {
         var feasibleNotFull = true;
         this.initializePopulation();
         this.calculateFitness(initialPosition);
-        logging.info("Population: " + this.population);
-        logging.info("Fitness: " + this.fitness);
+        this.sortFeasibleByFitness();
+
         return Direction.North;
     }
 
     initializePopulation() {
         this.feasibleMoves = []
-        this.population = [];
-        this.fitness = [];
+        this.populationArray = [];
 
         for(var i = 0; i < this.POPULATION_SIZE; ++i) {
-            this.fitness.push(0);
-            var newPopulation = this.generateNewRandomPopulation()
-            this.population.push(newPopulation);
+            var newDirections = this.generateNewRandomPopulation()
+            var newPopulation = {'population': newDirections, 'fitness': 0};
+            this.populationArray.push(newPopulation);
         }
     }
 
     generateNewRandomPopulation() {
-        var newPopulation = [];
+        var newDirections = [];
         for(var i = 0; i < this.TURNS_FOR_POPULATION; ++i) {
-            newPopulation.push(Direction.getAllCardinals()[Math.floor(4 * Math.random())]);
+            newDirections.push(Direction.getAllCardinals()[Math.floor(4 * Math.random())]);
         }
-        return newPopulation;
+        return newDirections;
     }
 
     calculateFitness(position) {
@@ -61,12 +58,26 @@ class GeneticAlgorithm {
             var calculatedFitness = 0;
             var initialPosition = position
             for (var j = 0; j < this.TURNS_FOR_POPULATION; j++) {
-                calculatedFitness += this.gameMap.get(initialPosition.directionalOffset(this.population[i][j])).haliteAmount;
-                position.directionalOffset(this.population[i][j]);
+                calculatedFitness += this.gameMap.get(initialPosition.directionalOffset(this.populationArray[i].population[j])).haliteAmount;
+                position.directionalOffset(this.populationArray[i].population[j]);
             }
-            this.fitness[i] = calculatedFitness;
+            this.populationArray[i].fitness = calculatedFitness;
 
         }
+    }
+
+    sortFeasibleByFitness() {
+        this.populationArray.sort(function (a, b) {
+            if (a.fitness > b.fitness) {
+                return 1;
+            }
+            if (a.fitness < b.fitness) {
+                return -1;
+            }
+            // a must be equal to b
+            return 0;
+        });
+        
     }
 }
 
