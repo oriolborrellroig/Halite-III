@@ -85,14 +85,6 @@ class MapCell {
         this.haliteAmount = halite;
         this.ship = null;
         this.structure = null;
-        this.visited = false;
-    }
-
-    /**
-     * @returns {Boolean} whether it has been visited or not.
-     */
-    get visited() {
-        return this.visited;
     }
 
     /**
@@ -124,16 +116,6 @@ class MapCell {
             return this.structure.constructor;
         }
         return null;
-    }
-
-    /**
-     * Mark this cell as visited.
-     *
-     * @param {boolean} visited sets the new value.
-     */
-
-    markVisited(visited) {
-        this.visited = visited;
     }
 
     /**

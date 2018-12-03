@@ -11,6 +11,7 @@ game.initialize().then(async () => {
 
     logging.info(`My Player ID is ${game.myId}.`);
 
+
     while (true) {
         await game.updateFrame();
 
@@ -32,9 +33,7 @@ game.initialize().then(async () => {
             }
         }
 
-        if (game.turnNumber < 0.75 * hlt.constants.MAX_TURNS &&
-            me.haliteAmount >= hlt.constants.SHIP_COST &&
-            !gameMap.get(me.shipyard).isOccupied) {
+        if (game.turnNumber < 0.75 * hlt.constants.MAX_TURNS && me.haliteAmount >= hlt.constants.SHIP_COST && !gameMap.get(me.shipyard).isOccupied) {
             commandQueue.push(me.shipyard.spawn());
         }
 

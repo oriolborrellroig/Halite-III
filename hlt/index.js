@@ -5,6 +5,7 @@ const { Entity, Dropoff, Shipyard, Ship } = require('./entity');
 const { Game, Player } = require('./networking');
 const { MapCell, GameMap } = require('./gameMap');
 const { Direction, Position } = require('./positionals');
+const { GeneticAlgorithm } = require('./geneticAlgorithm');
 
 module.exports = {
     Direction, Position,
@@ -16,6 +17,7 @@ module.exports = {
     Player,
     MapCell,
     GameMap,
+    GeneticAlgorithm,
     constants,
     logging,
 };
