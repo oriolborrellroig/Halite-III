@@ -3,9 +3,9 @@ const logging = require('./logging');
 
 class GeneticAlgorithm {
     constructor() {
-        this.TURNS_FOR_POPULATION = 1;
+        this.TURNS_FOR_POPULATION = 10;
         //Size of the population that will be generated.
-        this.POPULATION_SIZE = 10;
+        this.POPULATION_SIZE = 70;
         //Number of generations. If we don't have any feasible code generations, a new guess with new generations and populations will be made.
         this.GENERATION_SIZE = 10;
         //Max number of feasible codes. When the FEASIBLE_CODES_MAX is reached, we stop producing feasible codes and we choose one randomly
@@ -18,10 +18,17 @@ class GeneticAlgorithm {
         this.populationArray = [];
         //The map of the game;
         this.gameMap;
+
+        this.player;
+        this.parentPos = 0;
     }
 
     setGameMap(gameMap) {
         this.gameMap = gameMap;
+    }
+
+    setPlayer(player) {
+        this.player = player;
     }
 
     calculateNewDirection(initialPosition) {
@@ -30,19 +37,20 @@ class GeneticAlgorithm {
         this.initializePopulation();
         this.calculateFitness(initialPosition);
         this.sortFeasibleByFitness();
-        while (feasibleMoves.lenght <= 0) {
+        while (this.feasibleMoves.length <= 0) {
             generation = 0;
-            while (feasibleNotFull && generation <= GENERATION_SIZE) {
+            while (feasibleNotFull && (generation <= this.GENERATION_SIZE)) {
                 this.evolvePopulation();
                 this.calculateFitness(initialPosition);
                 this.sortFeasibleByFitness();
-                feasibleNotFull = addToFeasibleCodes();
+                feasibleNotFull = this.addToFeasibleCodes();
                 ++generation;
             }
         }
 
+        var randomPodition = Math.floor(this.FEASIBLE_CODES_MAX * Math.random());
 
-        return Direction.North;
+        return this.feasibleMoves[randomPodition].population[0];
     }
 
     initializePopulation() {
@@ -51,7 +59,7 @@ class GeneticAlgorithm {
 
         for(var i = 0; i < this.POPULATION_SIZE; ++i) {
             var newDirections = this.generateNewRandomPopulation()
-            var newPopulation = {'population': newDirections, 'fitness': 0};
+            var newPopulation = new DirectionArrayFitness(newDirections, 0);
             this.populationArray.push(newPopulation);
         }
     }
@@ -69,7 +77,8 @@ class GeneticAlgorithm {
             var calculatedFitness = 0;
             var initialPosition = position
             for (var j = 0; j < this.TURNS_FOR_POPULATION; j++) {
-                calculatedFitness += this.gameMap.get(initialPosition.directionalOffset(this.populationArray[i].population[j])).haliteAmount;
+                calculatedFitness += (25 / 100) * this.gameMap.get(initialPosition.directionalOffset(this.populationArray[i].population[j])).haliteAmount;
+                calculatedFitness += (75 / 100) * this.player.halite_amount;
                 position.directionalOffset(this.populationArray[i].population[j]);
             }
             this.populationArray[i].fitness = calculatedFitness;
@@ -92,52 +101,152 @@ class GeneticAlgorithm {
     }
 
     evolvePopulation() {
-        var newPopulationArray = [];
+
+        var newPopulationArray = this.populationArray.slice(0);
 
         //Crossovers
-        for (var i = 0; i < POPULATION_SIZE; i += 2) {
+        for (var i = 0; i < this.POPULATION_SIZE; i += 2) {
             if (Math.floor(2 * Math.random()) == 0) {
-                //TODO: Uninplemented Method
-                this.crossover1Point();
+                newPopulationArray = this.crossover1Point(newPopulationArray, i, i + 1);
             } else {
-                //TODO: Uninplemented Method
-                this.crossover2Points();
+                newPopulationArray = this.crossover2Point(newPopulationArray, i, i + 1);
             }
         }
 
         //Mutation, Permutation and Inversion
-        for (var i = 0; i < POPULATION_SIZE; i++) {
+        for (var i = 0; i < this.POPULATION_SIZE; i++) {
             if (Math.floor(100 * Math.random()) < 3) {
-                //TODO: Uninplemented Method
-                this.mutation();
+                this.mutation(newPopulationArray, i);
             } else if (Math.floor(100 * Math.random()) < 3) {
-                //TODO: Uninplemented Method
-                this.permutation();
+                this.permutation(newPopulationArray, i);
             } else if (Math.floor(100 * Math.random()) < 2) {
-                //TODO: Uninplemented Method
-                this.inversion();
+                this.inversion(newPopulationArray, i);
             }
         }
 
         //TODO: Uninplemented Method
-        this.repetitionsToRandom();
-
+        // this.repetitionsToRandom();
+        
         this.populationArray = newPopulationArray;
     }
 
+    crossover1Point(newPopulationArray, child1Pos, child2Pos) {
 
+        var mother = this.getParentPos();
+        var father = this.getParentPos();
 
-//    getParentPos() {
-//         parentPos += Math.floor(7 * Math.random());
-//         if (parentPos < POPULATION_SIZE / 5) {
-//             return parentPos;
-//         } else {
-//             parentPos = 0;
-//         }
-//         return parentPos;
-//     }
+        var sep = Math.floor(this.TURNS_FOR_POPULATION * Math.random()) + 1;
+
+        for (var j = 0; j < this.TURNS_FOR_POPULATION; j++) {
+            if (j <= sep) {
+                newPopulationArray[child1Pos].population[j] = this.populationArray[mother].population[j];
+                newPopulationArray[child2Pos].population[j] = this.populationArray[father].population[j];
+            } else { 
+                newPopulationArray[child1Pos].population[j] = this.populationArray[father].population[j];
+                newPopulationArray[child2Pos].population[j] = this.populationArray[mother].population[j];
+            }
+        }
+
+        return newPopulationArray;
+    }
+
+    crossover2Point(newPopulationArray, child1Pos, child2Pos) {
+
+        var mother = this.getParentPos();
+        var father = this.getParentPos();
+        var sep1 = Math.floor(this.TURNS_FOR_POPULATION * Math.random()) + 1;
+        var sep2 = Math.floor(this.TURNS_FOR_POPULATION * Math.random()) + 1;
+
+        if (sep1 > sep2) {
+            let temporalVariable = sep1;
+            sep1 = sep2;
+            sep2 = temporalVariable;
+        }
+
+        for (var i = 0; i < this.TURNS_FOR_POPULATION; i++) {
+            if (i <= sep1 || i > sep2) {
+                newPopulationArray[child1Pos].population[i] = this.populationArray[mother].population[i];
+                newPopulationArray[child2Pos].population[i] = this.populationArray[father].population[i];
+            } else {
+                newPopulationArray[child1Pos].population[i] = this.populationArray[father].population[i];
+                newPopulationArray[child2Pos].population[i] = this.populationArray[mother].population[i];
+            }
+        }
+
+        return newPopulationArray;
+    }
+
+   getParentPos() {
+        this.parentPos += Math.floor(7 * Math.random());
+        if (this.parentPos < this.POPULATION_SIZE / 5) {
+            return this.parentPos;
+        } else {
+            this.parentPos = 0;
+        }
+        return this.parentPos;
+    }
+
+    mutation(newPopulationArray, populationPosition) {
+        var pos = Math.floor( this.TURNS_FOR_POPULATION * Math.random());
+        newPopulationArray[populationPosition].population[pos] = Direction.getAllCardinals()[Math.floor(4 * Math.random())];
+    }
+
+    permutation(newPopulationArray, populationPosition) {
+        var pos1 = Math.floor( this.TURNS_FOR_POPULATION * Math.random());
+        var pos2 = Math.floor( this.TURNS_FOR_POPULATION * Math.random());
+        var temporalDirection = newPopulationArray[populationPosition].population[pos1];
+        var temporalPopulation = newPopulationArray[populationPosition].population;
+
+        newPopulationArray[populationPosition].population[pos1] = temporalPopulation[pos2];
+        newPopulationArray[populationPosition].population[pos2] = temporalDirection;
+    }
+
+    inversion(newPopulationArray, populationPosition) {
+        var pos1 = Math.floor( this.TURNS_FOR_POPULATION * Math.random());
+        var pos2 = Math.floor( this.TURNS_FOR_POPULATION * Math.random());
+
+        if (pos2 < pos1) {
+            let temporalVariable = pos2;
+            pos2 = pos1;
+            pos1 = temporalVariable;
+        }
+
+        for (var i = 0; i < (pos2 - pos1) / 2; i++) {
+            var temporalDirection = newPopulationArray[populationPosition].population[pos1 + i];
+            newPopulationArray[populationPosition].population[pos1 + i] = newPopulationArray[populationPosition].population[pos2 - i];
+            newPopulationArray[populationPosition].population[pos2 - i] = temporalDirection;
+        }
+    }
+
+    addToFeasibleCodes() {
+        
+        for (var i = 0; i < this.POPULATION_SIZE; i++) {
+            var totalFitness = 0;
+            for (var j = 0; j < this.TURNS_FOR_POPULATION; j++) {
+                totalFitness += this.populationArray[i].fitness[j];
+            }
+            if (this.feasibleMoves.length <= this.FEASIBLE_CODES_MAX) {
+                this.feasibleMoves.push(this.populationArray[i]);
+                if (this.feasibleMoves.length < this.FEASIBLE_CODES_MAX) {
+                    return false;
+                }
+            } else {
+                // E is full.
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+class DirectionArrayFitness {
+    constructor(populationArray, fitness) {
+        this.population = populationArray;
+        this.fitness = fitness
+    }
 }
 
 module.exports = {
     GeneticAlgorithm,
+    DirectionArrayFitness
 };
